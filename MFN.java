@@ -4,7 +4,7 @@ import java.math.*;
 
 /*
     Maksymalnie 25 punktow za klase MFN
-    do tej pory zdobyte: 8 pkt
+    do tej pory zdobyte: 14 pkt
  */
 
 public class MFN {
@@ -189,7 +189,20 @@ public class MFN {
     }
 
     // formula (8) ->
+    public double MinTransmissionTime(double d, double[] capacityStateVector) {
 
+        double minNetworkTime = Double.POSITIVE_INFINITY;
+
+        for (int[] path : this.MPs) {
+
+            double pathTransmissionTime = this.calculateTransmissionTime(path, d, capacityStateVector);
+            if (pathTransmissionTime < minNetworkTime) {
+                minNetworkTime = pathTransmissionTime;
+            }
+        }
+
+        return minNetworkTime;
+    }
 
     /*
     Apart from this, the MFN class should also implement additional methods:
