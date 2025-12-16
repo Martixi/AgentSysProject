@@ -67,18 +67,16 @@ public class MFN {
     /*
     The MFN class should contain the inner class Combinatorial implementing
     methods needed to compute factorial 𝑛! and binomial coefficient (n k )
-    2pts DONE
+    2pts
     */
     public static class Combinatorial {
 
         // factorial 𝑛!
-        public static long factorial(int n) {
-            if (n < 0) {
-                throw new IllegalArgumentException("factorial(n) < 0");
-            }
-            long result = 1;
+        public static BigInteger factorialBig(int n) {
+            if (n < 0) throw new IllegalArgumentException();
+            BigInteger result = BigInteger.ONE;
             for (int i = 2; i <= n; i++) {
-                result *= i;
+                result = result.multiply(BigInteger.valueOf(i));
             }
             return result;
         }
@@ -88,19 +86,12 @@ public class MFN {
         zuzia tu potrzebuje potwierdzenia czy ta funkcja
         na binomial ma sens i się zgadza matematycznie
          */
-        public static long binomial(int n, int k) {
-            if (n < 0 || k < 0) {
-                return 0;
+        public static BigInteger binomial(int n, int k) {
+            if (n < 0 || k < 0 || k > n) {
+                return BigInteger.ZERO;
             }
-            if (k == 0 || k == n) {
-                return 1;
-            }
-            long result = 1;
-
-            for (int i = 1; i <= k; i++) {
-                result = result*(n-(k-i))/i;
-            }
-            return result;
+            return factorialBig(n)
+                    .divide(factorialBig(k).multiply(factorialBig(n - k)));
         }
     }
 
