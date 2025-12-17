@@ -83,36 +83,49 @@ public class MFN {
 
         // binomial coefficient
         /*
-        zuzia tu potrzebuje potwierdzenia czy ta funkcja
-        na binomial ma sens i się zgadza matematycznie
+        here we first do some fractions shortening (skracanie ułamków) in order to save memory
+        we implement formula with symmetry optimization: k=min(k, n-k)
+        we use min because we can "cross out" from numerator and denominator common ingredients
          */
         public static BigInteger binomial(int n, int k) {
             if (n < 0 || k < 0 || k > n) {
                 return BigInteger.ZERO;
             }
-            return factorialBig(n)
-                    .divide(factorialBig(k).multiply(factorialBig(n - k)));
-        }
-    }
+
+            k = Math.min(k, n-k);
+            BigInteger result = BigInteger.ONE;
+
+            for (int i =1; i<=k; i++) {
+                result = result.multiply(BigInteger.valueOf(n - 1 + 1)).divide(BigInteger.valueOf(i));
+            }
+            return result;
+            }
+
 
     /*
-    The MFN class should implement methods defined by formulae (1), (3) - (5), and (8) from [1]
+    The MFN class should implement methods defined by formula (1), (3) - (5), and (8) from [1]
     5pts
      */
 
-    // sprawdzić logikę czy to się zgadza
     // formula (1) ->
     public double Pr(int i, int k) {
-
+        // Validate first to avoid IndexOutOfBounds errors
         if (i < 0 || i >= this.m || k < 0 || k > this.W[i]) {
             throw new IllegalArgumentException("Invalid index i or state k.");
         }
+
+        // local variables
         double w_i = this.W[i];
         double r_i = this.R[i];
         double beta_i = this.beta[i];
 
+        // calculation based on Formula (1)
         if (k >= 1) {
-            long binomialCoefficient = Combinatorial.binomial(w_i, k);
+            // convert BigInteger result to double for the formula
+            double binom = Combinatorial.binomial((int) w_i, k).doubleValue();
+
+            // this throws error -> cannot convert from BigInteger to long: long binomialCoefficient = Combinatorial.binomial(w_i, k);
+
             double term2 = Math.pow(r_i*beta_i, k);
             double term3 = Math.pow(1-r_i*beta_i, w_i-k);
 
@@ -124,6 +137,31 @@ public class MFN {
     }
 
     // sprawdzić logikę czy to się zgadza
+
+        // formula (5) ->
+        public double pathCapacity(int[] P, double[] X) {
+            double minCap = Double.MAX_VALUE;
+            if (X.length != this.m) {
+                throw new IllegalArgumentException("The given array length is not equal to the matrix.");
+            }
+            if (path.length == 0) {
+                return 0;
+            }
+            double result = P[0];
+
+            for (int i : P) {
+                if (i < 0 || i >= this.m) {
+                    throw new IllegalArgumentException("Invalid link index in the path array.");
+                }
+                double capacity = X[i];
+                if (capacity < result) {
+                    result = capacity;
+                }
+            }
+
+            return result;
+
+        }
     // formula (3) ->
     public double TransmissionTime(int P, double d, double[] X) {
         double pathCapacity = this.pathCapacity(P, X);
@@ -155,29 +193,7 @@ public class MFN {
         return result;
     }
 
-    // formula (5) ->
-    public double pathCapacity(int[] P, double[] X) {
-        if (X.length != this.m) {
-            throw new IllegalArgumentException("The given array length is not equal to the matrix.");
-        }
-        if (path.length == 0) {
-            return 0;
-        }
-        double result = P[0];
 
-        for (int i : P) {
-            if (i < 0 || i >= this.m) {
-                throw new IllegalArgumentException("Invalid link index in the path array.");
-            }
-            double capacity = X[i];
-            if (capacity < result) {
-                result = capacity;
-            }
-        }
-
-        return result;
-
-    }
 
     // formula (8) ->
     public double MinTransmissionTime(double d, double[] capacityStateVector) {
