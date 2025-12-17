@@ -70,7 +70,6 @@ public class MFN {
     2pts
     */
     public static class Combinatorial {
-
         // factorial 𝑛!
         public static BigInteger factorialBig(int n) {
             if (n < 0) throw new IllegalArgumentException();
@@ -80,6 +79,7 @@ public class MFN {
             }
             return result;
         }
+
 
         // binomial coefficient
         /*
@@ -92,14 +92,15 @@ public class MFN {
                 return BigInteger.ZERO;
             }
 
-            k = Math.min(k, n-k);
+            k = Math.min(k, n - k);
             BigInteger result = BigInteger.ONE;
 
-            for (int i =1; i<=k; i++) {
+            for (int i = 1; i <= k; i++) {
                 result = result.multiply(BigInteger.valueOf(n - 1 + 1)).divide(BigInteger.valueOf(i));
             }
             return result;
-            }
+        }
+    }
 
 
     /*
@@ -107,12 +108,12 @@ public class MFN {
     5pts
      */
 
-    // formula (1) ->
-    public double Pr(int i, int k) {
+    // formula (1)
+    // FIXED ERROR: this throws error -> cannot convert from BigInteger to long: long binomialCoefficient = Combinatorial.binomial(w_i, k);
+
+        public double Pr(int i, int k) {
         // Validate first to avoid IndexOutOfBounds errors
-        if (i < 0 || i >= this.m || k < 0 || k > this.W[i]) {
-            throw new IllegalArgumentException("Invalid index i or state k.");
-        }
+        if (i < 0 || i >= this.m || k < 0 || k > this.W[i]) throw new IllegalArgumentException("Invalid index i or state k.");
 
         // local variables
         double w_i = this.W[i];
@@ -123,16 +124,15 @@ public class MFN {
         if (k >= 1) {
             // convert BigInteger result to double for the formula
             double binom = Combinatorial.binomial((int) w_i, k).doubleValue();
+            double term2 = Math.pow(r_i * beta_i, k);
+            double term3 = Math.pow(1 - r_i * beta_i, w_i - k);
 
-            // this throws error -> cannot convert from BigInteger to long: long binomialCoefficient = Combinatorial.binomial(w_i, k);
+            return (1.0 / beta_i) * binom * term2 * term3;
 
-            double term2 = Math.pow(r_i*beta_i, k);
-            double term3 = Math.pow(1-r_i*beta_i, w_i-k);
-
-            return (1.0 / betai) * binomialCoefficient * term2 * term3;
         } else {
+            // k = 0
             double term1 = Math.pow(1-r_i*beta_i, w_i);
-            return 1 - (1 / beta_i)*(1 - term1);
+            return 1 - (1.0 / beta_i)*(1 - term1);
         }
     }
 
@@ -141,49 +141,37 @@ public class MFN {
         // formula (5) ->
         public double pathCapacity(int[] P, double[] X) {
             double minCap = Double.MAX_VALUE;
+
             if (X.length != this.m) {
-                throw new IllegalArgumentException("The given array length is not equal to the matrix.");
+                throw new IllegalArgumentException("The length of vector X is not equal to the matrix.");
             }
-            if (path.length == 0) {
-                return 0;
-            }
-            double result = P[0];
+            if (P.length == 0) return 0;
 
             for (int i : P) {
-                if (i < 0 || i >= this.m) {
-                    throw new IllegalArgumentException("Invalid link index in the path array.");
-                }
-                double capacity = X[i];
-                if (capacity < result) {
-                    result = capacity;
+                // calcualte capacity of link i at sate X[i]
+                double actualLinkCap = X[i] * (this.C[i] / (double)this.W[i]);
+                if (actualLinkCap < minCap) {
+                    minCap = actualLinkCap;
                 }
             }
-
-            return result;
-
+            return minCap;
         }
-    // formula (3) ->
+    // formula (3) ->  // smaller than very small epsilon, bc if we have some rounding errors then this will handle this
     public double TransmissionTime(int P, double d, double[] X) {
-        double pathCapacity = this.pathCapacity(P, X);
-        if (pathCapacity <= 0) {
-            return Double.POSITIVE_INFINITY;
-        } else {
-            double leadTime = this.pathLeadTime(P);
+        double pathCap = this.pathCapacity(P, X);
+        if (pathCap <= 1e-10) return Double.POSITIVE_INFINITY;
 
-            double term2 = d / pathCapacity;
-            // what is this
-            double term3 = Math.ceil(term2);
-
-            return leadTime + term3;
+        double leadTime = this.pathLeadTime(P);
+        double term2 = d / pathCap;
+        double term3 = Math.ceil(term2); // ceiling function handels the non-integer capacity (it rounds up)
+        return leadTime + term3;
         }
     }
 
 
-    // sprawdzić logikę czy to się zgadza
     // formula (4) ->
     public int pathLeadTime(int[] P) {
         int result = 0;
-
         for (int i : P) {
             if (i < 0 || i >= this.m) {
                 throw new IllegalArgumentException("Invalid link index in the path array.");
@@ -193,21 +181,13 @@ public class MFN {
         return result;
     }
 
-
-
     // formula (8) ->
-    public double MinTransmissionTime(double d, double[] capacityStateVector) {
-
+    public double MinTransmissionTime(double d, double[] X) {
         double minNetworkTime = Double.POSITIVE_INFINITY;
-
         for (int[] path : this.MPs) {
-
-            double pathTransmissionTime = this.calculateTransmissionTime(path, d, capacityStateVector);
-            if (pathTransmissionTime < minNetworkTime) {
-                minNetworkTime = pathTransmissionTime;
-            }
+            double pathTransmissionTime = this.TransmissionTime(path, d, X);
+            if (pathTransmissionTime < minNetworkTime) minNetworkTime = pathTransmissionTime;
         }
-
         return minNetworkTime;
     }
 
