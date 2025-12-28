@@ -31,3 +31,81 @@ Finally, the agent should receive a message from the TT agent containing the
 network reliability estimated by the TT agent, display this message, and terminate.
 (2)
  */
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+/**
+ * GUI for SSVGenerator to input MFN parameters and CSV file path.
+ */
+public class SSVGeneratorGui extends JFrame {
+    private SSVGenerator myAgent;
+    private JTextField filePathField, mField, wField, cField, lField, rField, rhoField;
+
+    public SSVGeneratorGui(SSVGenerator a) {
+        myAgent = a;
+        setTitle("SSV Generator GUI");
+        setLayout(new GridLayout(8, 2));
+
+        add(new JLabel("Path to MPs (.csv):"));
+        filePathField = new JTextField("MPs0.csv");
+        add(filePathField);
+
+        add(new JLabel("m:"));
+        mField = new JTextField("5");
+        add(mField);
+
+        add(new JLabel("W (comma separated):"));
+        wField = new JTextField("4,3,2,3,2");
+        add(wField);
+
+        add(new JLabel("C (comma separated):"));
+        cField = new JTextField("10,15,25,15,20");
+        add(cField);
+
+        add(new JLabel("L (comma separated):"));
+        lField = new JTextField("5,7,6,5,8");
+        add(lField);
+
+        add(new JLabel("R (comma separated):"));
+        rField = new JTextField("0.7,0.65,0.67,0.71,0.75");
+        add(rField);
+
+        add(new JLabel("rho (comma separated):"));
+        rhoField = new JTextField("0.1,0.3,0.5,0.7,0.9");
+        add(rhoField);
+
+        JButton sendBtn = new JButton("Send Data");
+        sendBtn.addActionListener(e -> {
+            try {
+                int m = Integer.parseInt(mField.getText());
+                int[] W = parseToIntArray(wField.getText());
+                double[] C = parseToDoubleArray(cField.getText());
+                int[] L = parseToIntArray(lField.getText());
+                double[] R = parseToDoubleArray(rField.getText());
+                double[] rho = parseToDoubleArray(rhoField.getText());
+
+                myAgent.processData(m, W, C, L, R, rho, filePathField.getText());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Invalid Input: " + ex.getMessage());
+            }
+        });
+        add(sendBtn);
+        pack();
+    }
+
+    private int[] parseToIntArray(String s) {
+        String[] parts = s.split(",");
+        int[] res = new int[parts.length];
+        for(int i=0; i<parts.length; i++) res[i] = Integer.parseInt(parts[i].trim());
+        return res;
+    }
+
+    private double[] parseToDoubleArray(String s) {
+        String[] parts = s.split(",");
+        double[] res = new double[parts.length];
+        for(int i=0; i<parts.length; i++) res[i] = Double.parseDouble(parts[i].trim());
+        return res;
+    }
+}
