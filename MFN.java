@@ -7,14 +7,15 @@ import java.math.*;
     do tej pory zdobyte: 14 pkt
  */
 
-public class MFN {
+// IMPORTANT: Must be Serializable for JADE agent communication
+public class MFN implements Serializable {
 
     /*
     In particular, the MFN class should contain
     the fields necessary to implement the task
     1pts DONE
      */
-
+    private static final long serialVersionUID = 1L;
     // variables required in projects instruction
     private int m;                  // the number of links
     private int[] W;                // the component number vector
@@ -40,12 +41,16 @@ public class MFN {
             throw new IllegalArgumentException("Wrong parameters: wrong length of one or more vectors");
         }
         // check whether all values of R and rho are between 0 and 1
-        for (double r : R){
-            if (r < 0 || r > 1) { throw new IllegalArgumentException("Wrong parameters: Reliability should be between 0 and 1"); }
+        for (double r : R) {
+            if (r < 0 || r > 1) {
+                throw new IllegalArgumentException("Wrong parameters: Reliability should be between 0 and 1");
+            }
         }
 
-        for (double h : rho){
-            if (h < 0 || h > 1){ throw new IllegalArgumentException("Wrong parameters: Correlation should be between 0 and 1"); }
+        for (double h : rho) {
+            if (h < 0 || h > 1) {
+                throw new IllegalArgumentException("Wrong parameters: Correlation should be between 0 and 1");
+            }
         }
 
         // everything is fine
@@ -60,7 +65,7 @@ public class MFN {
 
         // formula (2):
         for (int i = 0; i < m; i++) {
-            this.beta[i] = 1 + (rho[i]*(1- this.R[i])/this.R[i]);
+            this.beta[i] = 1 + (rho[i] * (1 - this.R[i]) / this.R[i]);
         }
     }
 
@@ -69,7 +74,7 @@ public class MFN {
     methods needed to compute factorial 𝑛! and binomial coefficient (n k )
     2pts
     */
-    public static class Combinatorial {
+    public static class Combinatorial implements Serializable {
         // factorial 𝑛!
         public static BigInteger factorialBig(int n) {
             if (n < 0) throw new IllegalArgumentException();
@@ -88,7 +93,7 @@ public class MFN {
         we use min because we can "cross out" from numerator and denominator common ingredients
          */
         public static BigInteger binomial(int n, int k) {
-            if (n < 0 || k < 0 || k > n) {
+            if (k < 0 || k > n) {
                 return BigInteger.ZERO;
             }
 
@@ -100,7 +105,7 @@ public class MFN {
             }
             return result;
         }
-    }
+
 
 
     /*
@@ -108,35 +113,33 @@ public class MFN {
     5pts
      */
 
-    // formula (1)
-    // FIXED ERROR: this throws error -> cannot convert from BigInteger to long: long binomialCoefficient = Combinatorial.binomial(w_i, k);
+        // formula (1)
+        // FIXED ERROR: this throws error -> cannot convert from BigInteger to long: long binomialCoefficient = Combinatorial.binomial(w_i, k);
 
         public double Pr(int i, int k) {
-        // Validate first to avoid IndexOutOfBounds errors
-        if (i < 0 || i >= this.m || k < 0 || k > this.W[i]) throw new IllegalArgumentException("Invalid index i or state k.");
+            // Validate first to avoid IndexOutOfBounds errors
+            if (i < 0 || i >= m || k < 0 || k > W[i]) throw new IllegalArgumentException("Invalid index i or state k.");
 
-        // local variables
-        double w_i = this.W[i];
-        double r_i = this.R[i];
-        double beta_i = this.beta[i];
+            // local variables
+            double w_i = W[i];
+            double r_i = R[i];
+            double beta_i = beta[i];
 
-        // calculation based on Formula (1)
-        if (k >= 1) {
-            // convert BigInteger result to double for the formula
-            double binom = Combinatorial.binomial((int) w_i, k).doubleValue();
-            double term2 = Math.pow(r_i * beta_i, k);
-            double term3 = Math.pow(1 - r_i * beta_i, w_i - k);
+            // calculation based on Formula (1)
+            if (k >= 1) {
+                // convert BigInteger result to double for the formula
+                double binom = Combinatorial.binomial((int) w_i, k).doubleValue();
+                double term2 = Math.pow(r_i * beta_i, k);
+                double term3 = Math.pow(1 - r_i * beta_i, w_i - k);
 
-            return (1.0 / beta_i) * binom * term2 * term3;
+                return (1.0 / beta_i) * binom * term2 * term3;
 
-        } else {
-            // k = 0
-            double term1 = Math.pow(1-r_i*beta_i, w_i);
-            return 1 - (1.0 / beta_i)*(1 - term1);
+            } else {
+                // k = 0
+                double term1 = Math.pow(1 - r_i * beta_i, w_i);
+                return 1 - (1.0 / beta_i) * (1 - term1);
+            }
         }
-    }
-
-    // sprawdzić logikę czy to się zgadza
 
         // formula (5) ->
         public double pathCapacity(int[] P, double[] X) {
@@ -149,102 +152,102 @@ public class MFN {
 
             for (int i : P) {
                 // calcualte capacity of link i at sate X[i]
-                double actualLinkCap = X[i] * (this.C[i] / (double)this.W[i]);
+                double actualLinkCap = X[i] * (C[i] / (double) W[i]);
                 if (actualLinkCap < minCap) {
                     minCap = actualLinkCap;
                 }
             }
             return minCap;
         }
-    // formula (3) ->  // smaller than very small epsilon, bc if we have some rounding errors then this will handle this
-    public double TransmissionTime(int P, double d, double[] X) {
-        double pathCap = this.pathCapacity(P, X);
-        if (pathCap <= 1e-10) return Double.POSITIVE_INFINITY;
 
-        double leadTime = this.pathLeadTime(P);
-        double term2 = d / pathCap;
-        double term3 = Math.ceil(term2); // ceiling function handels the non-integer capacity (it rounds up)
-        return leadTime + term3;
+        // formula (3) ->  // smaller than very small epsilon, bc if we have some rounding errors then this will handle this
+        public double TransmissionTime(int P, double d, double[] X) {
+            double pathCap = this.pathCapacity(P, X);
+            if (pathCap <= 1e-10) return Double.POSITIVE_INFINITY;
+
+            double leadTime = pathLeadTime(P);
+            double term2 = d / pathCap;
+            double term3 = Math.ceil(term2); // ceiling function handels the non-integer capacity (it rounds up)
+            return leadTime + term3;
         }
-    }
 
 
-    // formula (4) ->
-    public int pathLeadTime(int[] P) {
-        int result = 0;
-        for (int i : P) {
-            if (i < 0 || i >= this.m) {
-                throw new IllegalArgumentException("Invalid link index in the path array.");
+        // formula (4) ->
+        public int pathLeadTime(int[] P) {
+            int result = 0;
+            for (int i : P) {
+                if (i < 0 || i >= this.m) {
+                    throw new IllegalArgumentException("Invalid link index in the path array.");
+                }
+                result += this.L[i];
             }
-            result += this.L[i];
+            return result;
         }
-        return result;
-    }
 
-    // formula (8) ->
-    public double MinTransmissionTime(double d, double[] X) {
-        double minNetworkTime = Double.POSITIVE_INFINITY;
-        for (int[] path : this.MPs) {
-            double pathTransmissionTime = this.TransmissionTime(path, d, X);
-            if (pathTransmissionTime < minNetworkTime) minNetworkTime = pathTransmissionTime;
+        // formula (8) ->
+        public double MinTransmissionTime(double d, double[] X) {
+            double minNetworkTime = Double.POSITIVE_INFINITY;
+            for (int[] path : MPs) {
+                double pathTransmissionTime = TransmissionTime(path, d, X);
+                if (pathTransmissionTime < minNetworkTime) minNetworkTime = pathTransmissionTime;
+            }
+            return minNetworkTime;
         }
-        return minNetworkTime;
-    }
 
     /*
     Apart from this, the MFN class should also implement additional methods:
      */
 
-    /*
-    void getMPs(String fileName) that reads the file with
-    the file name = filename and creates ArrayList<int[]> MPs
-    3 pts DONE
-     */
-    void getMPs (String fileName) {
+        /*
+        void getMPs(String fileName) that reads the file with
+        the file name = filename and creates ArrayList<int[]> MPs
+        3 pts DONE
+         */
+        void getMPs(String fileName) {
 
-        this.MPs = new ArrayList<>();
+            this.MPs = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            String line;
+            try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+                String line;
 
-            // Read the file line by line
-            while ((line = br.readLine()) != null) {
-                line = line.trim();
+                // Read the file line by line
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
 
-                // Skip empty lines
-                if (line.isEmpty()) continue;
+                    // Skip empty lines
+                    if (tokens.length == 0 || tokens[0].isEmpty()) continue;
 
-                // Split the line by comma and store tokens
-                String[] tokens = line.split(",");
+                    // Split the line by comma and store tokens
+                    String[] tokens = line.split(",");
 
-                List<Integer> numbersList = new ArrayList<>();
+                    List<Integer> numbersList = new ArrayList<>();
 
-                for (String token : tokens) {
-                    token = token.trim();
-                    if (!token.isEmpty()) {
-                        try {
-                            numbersList.add(Integer.parseInt(token))
-                        } catch (NumberFormatException e) {
-                            // Handle case where a token is not a valid integer
-                            System.err.println("Skipping non-integer token: " + token);
+                    for (String token : tokens) {
+                        token = token.trim();
+                        if (!token.isEmpty()) {
+                            try {
+                                numbersList.add(Integer.parseInt(token));
+                            } catch (NumberFormatException e) {
+                                // Handle case where a token is not a valid integer
+                                System.err.println("Skipping non-integer token: " + token);
+                            }
                         }
                     }
+                    int[] numbers = numbersList.stream().mapToInt(i -> i).toArray();
+                    if (numbers.length > 0) {
+                        this.MPs.add(numbers);
+                    }
                 }
-                int[] numbers = numbersList.stream().mapToInt(i -> i).toArray();
-                if (numbers.length > 0) {
-                    this.MPs.add(numbers);
-                }
+            } catch (FileNotFoundException e) {
+                // the file doesn't exist
+                System.err.println("Error: File not found");
+                e.printStackTrace();
+            } catch (IOException e) {
+                // I/O errors during reading
+                System.err.println("Error reading file");
+                e.printStackTrace();
             }
-        } catch (FileNotFoundException e) {
-            // the file doesn't exist
-            System.err.println("Error: File not found");
-            e.printStackTrace();
-        } catch (IOException e) {
-            // I/O errors during reading
-            System.err.println("Error reading file");
-            e.printStackTrace();
         }
-    }
 
     /*
     double[][] CDF(double[][] arPMF) that creates an array of values of the cumulative
@@ -252,32 +255,31 @@ public class MFN {
     1 point
      */
 
-    // no fucking idea czy to działa nie rozumiem
-    double[][] CDF(double[][] arPMF) {
-        double[][] arCDF = new double[arPMF.length][];
+        // no fucking idea czy to działa nie rozumiem
+        public double[][] CDF(double[][] arPMF) {
+            double[][] arCDF = new double[arPMF.length][];
+            for (int i = 0; i < arPMF.length; i++) {
+                // Get the PMF
+                double[] pmf_i = arPMF[i];
 
-        for (int i = 0; i < arPMF.length; i++) {
-            // Get the PMF
-            double[] pmf_i = arPMF[i];
+                if (pmf_i == null || pmf_i.length == 0) {
+                    // Skip if the PMF is empty or null for this link
+                    arCDF[i] = new double[0];
+                    continue;
+                }
 
-            if (pmf_i == null || pmf_i.length == 0) {
-                // Skip if the PMF is empty or null for this link
-                arCDF[i] = new double[0];
-                continue;
+                double[] cdf_i = new double[pmf_i.length];
+                double cumulativeSum = 0.0;
+
+                // Calculate the cumulative sum (the CDF)
+                for (int k = 0; k < pmf_i.length; k++) {
+                    cumulativeSum += pmf_i[k];
+                    cdf_i[k] = cumulativeSum;
+                }
+                arCDF[i] = cdf_i;
             }
-
-            double[] cdf_i = new double[pmf_i.length];
-            double cumulativeSum = 0.0;
-
-            // Calculate the cumulative sum (the CDF)
-            for (int k = 0; k < pmf_i.length; k++) {
-                cumulativeSum += pmf_i[k];
-                cdf_i[k] = cumulativeSum;
-            }
-            arCDF[i] = cdf_i;
+            return arCDF;
         }
-        return arCDF;
-    }
 
     /*
     static double normalCDF(double z) that computes an approximated value of the
@@ -286,19 +288,12 @@ public class MFN {
     where !! denotes the double factorial and should also be implemented.
     2 pts
      */
-
-    static double normalCDF(double[][] z) {
-        final int N = 100;
-
-
-    }
-
     // Method to compute the double factorial (n!!)
     public static long doubleFactorial(int n) {
         if (n < 0) {
             throw new IllegalArgumentException("Double factorial is not defined for negative numbers.");
         }
-        if (n == 0 || n == 1) {
+        if (n == 0 || n == 1) { // code optimization for special cases
             return 1;
         }
 
@@ -310,6 +305,22 @@ public class MFN {
         return result;
     }
 
+        public static double normalCDF(double z) {
+            if (z == 0) return 0.5;
+            if (z < 0) return 1.0 - normalCDF(-z);
+
+            double sum = 0;
+            for (int n = 0; n <= 100; n++) {
+                double numerator = Math.pow(z, 2 * n + 1);
+                double denominator = doubleFactorial(2 * n + 1);
+                sum += numerator / denominator;
+            }
+
+            double constant = 1.0 / Math.sqrt(2 * Math.PI);
+            return 0.5 + constant * Math.exp(-z * z / 2.0) * sum;
+        }
+
+
     /*
     static double normalICDF(double u) that computes an approximated value of the
     quantile function (the inverse of the cumulative distribution function) of the
@@ -320,16 +331,39 @@ public class MFN {
     5 pts
      */
 
-    static double normalICDF(double u) {
+        public static double normalICDF(double u) {
+            // tu ma byc ten nasz algorytm wlasny, u nas on wyglada tak, ze dopoki roznica low i high jest za duza
+            // i wartosc funkcji ten normalCDF od wartosci w polowie jest mniejsza niz u
+            // to zmieniamy na low, a jesli wieksza to zmienaimy to mid
+            // czyli taki searching algorithm binary chyba sie nazywal
+            if (u <= 0 || u >= 1) throw new IllegalArgumentException("u must be (0,1)");
 
-    }
+            double low = -8.0; // Standard normal values rarely exceed 8 sigma
+            double high = 8.0;
+            double mid = 0;
 
-    /*
-    Based on formula (12b) (from [2] G.S. Fishman – “Monte Carlo, Concepts,
-    Algorithms, and Applications” – Springer), implement a function finding
-    the worstcase normal sample size
-    1 point
-     */
+            while (high - low > 1e-12) { // Precision slightly higher than required
+                mid = (low + high) / 2.0;
+                if (normalCDF(mid) < u) {
+                    low = mid;
+                } else {
+                    high = mid;
+                }
+            }
+            return mid;
+        }
+
+        /*
+        Based on formula (12b) (from [2] G.S. Fishman – “Monte Carlo, Concepts,
+        Algorithms, and Applications” – Springer), implement a function finding
+        the worstcase normal sample size
+        1 point
+         */
+// Formula (12b) from Fishman
+        public int worstCaseSampleSize(double epsilon, double delta) {
+            double z = normalICDF(1 - delta / 2.0);
+            return (int) Math.ceil(Math.pow(z / (2.0 * epsilon), 2));
+        }
 
     /*
     Based on the inverse CDF method applied to discrete distribution or the Chen and
@@ -341,7 +375,20 @@ public class MFN {
     3 pts
      */
 
-    double[][] randomSSV(int N, double[][]arCDF) {
-
+        public double[][] randomSSV(int N, double[][] arCDF) {
+            double[][] samples = new double[N][m];
+            Random rand = new Random();
+            for (int n = 0; n < N; n++) {
+                for (int i = 0; i < m; i++) {
+                    double u = rand.nextDouble();
+                    int state = 0;
+                    while (state < arCDF[i].length - 1 && u > arCDF[i][state]) {
+                        state++;
+                    }
+                    samples[n][i] = state;
+                }
+            }
+            return samples;
+        }
     }
 }
